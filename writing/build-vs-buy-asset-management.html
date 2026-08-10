@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build vs. buy: asset management — Thomas Porowski</title>
+<meta name="description" content="Why building a sidebar app that reads device data we already owned was the defensible choice over buying the vendor's asset management product.">
+<meta name="theme-color" content="#17150F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FBF8F0" media="(prefers-color-scheme: light)">
+<link rel="canonical" href="https://tporowski.github.io/writing/build-vs-buy-asset-management.html">
+<meta property="og:title" content="Build vs. buy, when you already own the data">
+<meta property="og:description" content="Why building a sidebar app that reads device data we already owned was the defensible choice over buying the vendor's asset management product.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://tporowski.github.io/writing/build-vs-buy-asset-management.html">
+<meta property="og:image" content="https://tporowski.github.io/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Contrast on --ground: bone 15.9:1, amber 9.3:1, dim 5.5:1, branch 2.9:1 */
+    --ground:#17150F; --raised:#241F14; --rule:#3A3423;
+    --branch:#6B6047; --dim:#9C8B63; --bone:#F5EFE0; --amber:#E8B04B;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  }
+  @media (prefers-color-scheme:light){
+    /* bone 16.5:1, amber 5.6:1, dim 5.6:1, branch 3.1:1 */
+    :root{
+      --ground:#FBF8F0; --raised:#F0E9D8; --rule:#DDD3BC;
+      --branch:#9A8C69; --dim:#6E6350; --bone:#1C1913; --amber:#8A5A0B;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;color-scheme:dark light;background:var(--ground)}
+  body{margin:0;background:var(--ground);color:var(--bone);font-family:var(--serif);font-size:18px;line-height:1.72}
+  .wrap{
+    max-width:65ch;margin:0 auto;
+    padding-left:max(20px,env(safe-area-inset-left));
+    padding-right:max(20px,env(safe-area-inset-right));
+  }
+  .skip{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .skip:focus{
+    position:fixed;top:8px;left:8px;z-index:10;width:auto;height:auto;clip-path:none;
+    background:var(--raised);color:var(--amber);padding:10px 16px;font-size:13px;
+    font-family:var(--mono);text-decoration:none;outline:2px solid var(--amber);
+  }
+  a{-webkit-tap-highlight-color:rgba(232,176,75,.24)}
+  nav{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;padding:24px 20px;max-width:65ch;margin:0 auto}
+  .monogram{font-family:var(--mono);font-weight:500;letter-spacing:.16em;font-size:12.5px;text-transform:uppercase;text-decoration:none;color:var(--dim)}
+  nav a.back{font-family:var(--mono);font-size:12.5px;color:var(--dim);text-decoration:none}
+  .monogram:hover,nav a.back:hover{color:var(--amber)}
+  header{padding:48px 0 28px;border-bottom:1px solid var(--rule);margin-bottom:36px}
+  .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 20px}
+  h1{font-family:var(--mono);font-weight:500;font-size:clamp(1.4rem,4.4vw,1.95rem);line-height:1.28;letter-spacing:-.015em;margin:0;text-wrap:balance}
+  .standfirst{font-size:1.05rem;color:var(--dim);font-style:italic;margin:20px 0 0;text-wrap:pretty}
+  h2{font-family:var(--mono);font-weight:500;font-size:1rem;line-height:1.5;margin:44px 0 14px;letter-spacing:-.005em;color:var(--bone);text-wrap:balance}
+  p{margin:0 0 20px}
+  ul{padding-left:22px;margin:0 0 20px}
+  li{margin-bottom:9px}
+  strong{color:var(--amber);font-weight:500}
+  blockquote{margin:32px 0;padding-left:22px;border-left:2px solid var(--amber);font-style:italic;color:var(--dim)}
+  code{font-family:var(--mono);font-size:.84em;background:var(--raised);color:var(--bone);padding:1px 5px;border-radius:2px}
+  footer{margin-top:64px;padding:28px 0 76px;border-top:1px solid var(--rule);font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--dim)}
+  footer a{color:var(--bone);text-decoration:none;border-bottom:1px solid var(--rule)}
+  footer a:hover,footer a:focus-visible{color:var(--amber);border-bottom-color:var(--amber)}
+  :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+  @media print{
+    :root{--ground:#fff;--raised:#f2f2f2;--rule:#bbb;--branch:#999;--dim:#444;--bone:#000;--amber:#000}
+    body{font-size:11pt}
+    nav{display:none}
+    strong{font-weight:600}
+    footer a[href]::after{content:" (" attr(href) ")";font-size:.85em;color:var(--dim)}
+    h2{break-after:avoid}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#article">Skip to the article</a>
+<nav aria-label="Primary">
+  <a class="monogram" href="../index.html">T. POROWSKI</a>
+  <a class="back" href="../index.html#writing"><span aria-hidden="true">←</span> All writing</a>
+</nav>
+
+<main class="wrap" id="article">
+  <header>
+    <p class="eyebrow">Decision · Internal tooling</p>
+    <h1>Build vs. buy, when you already own the data</h1>
+    <p class="standfirst">The quote was about nine thousand dollars a year. What it was selling was a second copy of a record we already had.</p>
+  </header>
+
+  <p>Helpdesk agents were asking users questions the helpdesk should already have known the answer to. What laptop is this, is the disk encrypted, when did it last check in. The user usually didn't know, so the ticket went back and forth twice before anyone could start on the actual problem.</p>
+
+  <p>The ticketing vendor sells an answer to this. It is an asset management product, it is priced per agent, and for the seats we would have needed it came to roughly nine thousand dollars a year, recurring. That is a list-price estimate for our seat count rather than an invoice we ever received.</p>
+
+  <p>I built the thing instead. A sidebar app that authenticates the agent to Microsoft, asks Graph which devices belong to the person who opened the ticket, and renders them next to the conversation. It took about a weekend, plus a few evenings of polish since.</p>
+
+  <h2>The tell was that the data already existed</h2>
+
+  <p>Every device fact the agents wanted was already in our device management tenant. It was accurate, and we were already paying for it as part of a licence we held for other reasons. Endpoint management is the system of record for what a laptop is.</p>
+
+  <p>So the product wasn't offering to know anything new. It was offering to hold a copy of what Microsoft already knew, in a second place, updated on some sync interval, and to charge per agent for the privilege of looking at it. <strong>We would have been paying, per agent per year, for a nicer way to look at data we already had.</strong></p>
+
+  <p>That generalises. Buying is usually right when the vendor knows something you don't: they have the integrations, the compliance work, the years of edge cases. Buying is usually wrong when the vendor is charging rent on a join between two systems you already pay for.</p>
+
+  <h2>What made building defensible</h2>
+
+  <p>"I could write that" is not a reason to write it. I have inherited enough abandoned internal tools to know that the build column has costs the spreadsheet never shows. Three things made this one hold up.</p>
+
+  <ul>
+    <li>The interface is bounded, and someone else maintains it. This is a read against a documented, versioned, first-party API, so I am not reverse-engineering anything and the surface I depend on does not move without notice.</li>
+    <li>It introduces no new system of record. There is no database and no sync job, so there is no state that can drift out of agreement with reality. The app asks at render time and forgets.</li>
+    <li>The failure mode is the status quo. If the sidebar breaks, the panel is empty and the agent asks the user the question, exactly as before. No ticket is blocked and no data is lost, so I could ship it without a rollback plan. The rollback is ignoring the panel.</li>
+  </ul>
+
+  <p>Reverse any one of those and I'd have bought. If it needed to store asset history, or if an outage stopped agents working, the maintenance burden and the on-call expectation stop being mine to volunteer for.</p>
+
+  <blockquote>The honest cost of building is that the vendor's product comes with a support contract and a roadmap, and mine comes with me. That is a real line item, and it is the one people leave off.</blockquote>
+
+  <h2>Live data is the wrong thing to put in an audit record</h2>
+
+  <p>The one piece of state the app does write is a button that drops the current device details into the ticket as an internal note. That looked like a convenience feature and turned out to be the architectural point.</p>
+
+  <p>The sidebar reads live. Open a two-year-old ticket and it shows you the machine that person has <em>today</em>. But the question you're asking a closed ticket is what the machine was <em>then</em>: which laptop had the problem, and what its encryption state was when the user reported it.</p>
+
+  <p><strong>A live query answers the wrong question about a historical record.</strong> So the note is the snapshot, written once, at the moment it mattered, into the place the rest of the ticket's history already lives. The ticket stays readable on its own, by anyone, without the sidebar and without a Microsoft licence.</p>
+
+  <h2>Where I'd choose differently</h2>
+
+  <p>The build was right for the question actually being asked, which was "show me a read of data I already own, in the place I'm already working." It scales exactly as far as that sentence does.</p>
+
+  <p>If the ask grew into real asset management, meaning procurement, warranty tracking, chain of custody, and write workflows that mutate the record, I would buy, and I would not think about it very hard. Building that would mean owning a system of record, with everything that implies.</p>
+
+  <p>With more infrastructure available I'd also change one thing about this version. It queries on every render, so a busy agent generates a lot of identical calls. A short server-side cache in front of the API would fix that, but it needs somewhere to run and something to hold a token, which is exactly the shared infrastructure a one-person build doesn't have. It works fine without it, and it would be tidier with it.</p>
+
+  <footer>
+    Thomas Porowski · <a href="mailto:tporowski17@gmail.com">tporowski17@gmail.com</a> · <a href="../index.html">home</a><br>
+    Written about a system I maintain at work. Views my own; no employer configuration is described here.
+  </footer>
+</main>
+</body>
+</html>

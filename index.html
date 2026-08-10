@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thomas Porowski — Systems &amp; Automation Engineer</title>
+<meta name="description" content="I build identity plumbing: joiner-mover-leaver automation, SaaS integrations, and internal tooling.">
+<meta name="theme-color" content="#17150F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FBF8F0" media="(prefers-color-scheme: light)">
+<link rel="canonical" href="https://tporowski.github.io/">
+<meta property="og:title" content="Thomas Porowski — Systems &amp; Automation Engineer">
+<meta property="og:description" content="I build identity plumbing: joiner-mover-leaver automation, SaaS integrations, and internal tooling.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tporowski.github.io/">
+<meta property="og:image" content="https://tporowski.github.io/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Contrast against --ground, measured, not eyeballed:
+       bone 15.9:1, amber 9.3:1, dim 5.5:1, branch 2.9:1.
+       dim carries metadata at 12.5px, so it has to clear 4.5:1. The brief's
+       #8A7A55 measured 4.34:1 and was lightened to hit the floor. branch is
+       below 4.5 on purpose: it only ever draws box glyphs, which are
+       aria-hidden and never the only thing saying what a row is. */
+    --ground:#17150F;      /* page background, warm near-black */
+    --raised:#241F14;      /* hovered or focused row, inline code */
+    --rule:#3A3423;        /* hairlines, borders */
+    --branch:#6B6047;      /* tree glyphs, deliberately recessive */
+    --dim:#9C8B63;         /* metadata, captions, secondary labels */
+    --bone:#F5EFE0;        /* body text, the workhorse */
+    --amber:#E8B04B;       /* accent: active node, hover, focus, links */
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:light){
+    /* bone 16.5:1, amber 5.6:1, dim 5.6:1, branch 3.1:1 */
+    :root{
+      --ground:#FBF8F0; --raised:#F0E9D8; --rule:#DDD3BC;
+      --branch:#9A8C69; --dim:#6E6350; --bone:#1C1913; --amber:#8A5A0B;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;color-scheme:dark light;background:var(--ground)}
+  body{
+    margin:0;background:var(--ground);color:var(--bone);
+    font-family:var(--mono);font-size:16px;line-height:1.7;font-weight:400;
+  }
+  .wrap{
+    max-width:860px;margin:0 auto;
+    padding-left:max(20px,env(safe-area-inset-left));
+    padding-right:max(20px,env(safe-area-inset-right));
+  }
+
+  /* Off-screen until focused. Ten tree links sit between the top of the page and
+     the first section, which is a long way to tab past. */
+  .skip{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .skip:focus{
+    position:fixed;top:8px;left:8px;z-index:10;width:auto;height:auto;clip-path:none;
+    background:var(--raised);color:var(--amber);padding:10px 16px;font-size:13px;
+    text-decoration:none;outline:2px solid var(--amber);
+  }
+
+  /* ---------- nav ---------- */
+  .topnav{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;padding:24px 0}
+  .monogram{font-size:12.5px;letter-spacing:.16em;font-weight:500;color:var(--dim);text-transform:uppercase}
+  .topnav ul{list-style:none;display:flex;gap:20px;margin:0;padding:0;flex-wrap:wrap}
+  .topnav a{font-size:12.5px;color:var(--dim);text-decoration:none}
+  .topnav a:hover{color:var(--amber)}
+
+  /* ---------- hero: the root of the tree ---------- */
+  header{padding:56px 0 40px}
+  h1{
+    font-family:var(--mono);font-weight:500;font-size:clamp(1.5rem,5.5vw,2.1rem);
+    line-height:1.2;letter-spacing:-.01em;margin:0 0 24px;color:var(--bone);
+  }
+  .thesis{margin:0 0 20px;max-width:62ch;color:var(--bone);text-wrap:pretty}
+  .whereabouts{font-size:12.5px;line-height:1.9;color:var(--dim);margin:0}
+
+  /* ---------- the tree ---------- */
+  /* Rows are grid, never space padding, so the metric column holds its position no
+     matter how long a label gets or which font actually loads. The glyph column is
+     `auto`, which means each row's own box-drawing prefix decides where its label
+     starts. That is the indentation: it comes from the markup, not from padding.
+
+     The negative margin cancels the row's border plus padding so the first glyph
+     lines up under the h1, and the heading reads as the root the branches hang off. */
+  .tree-nav{padding-bottom:16px;margin-left:-10px}
+  .tree,.tree ul{list-style:none;margin:0;padding:0}
+  .tree a,.tree .row{
+    display:grid;grid-template-columns:auto minmax(0,1fr) max-content;
+    align-items:baseline;gap:0;
+    font-size:13.5px;line-height:2.05;text-decoration:none;color:var(--bone);
+    border-left:2px solid transparent;padding-left:8px;
+  }
+  .tree .glyph{white-space:pre;color:var(--branch)}
+  .tree .label{overflow-wrap:anywhere}
+  .tree .metric{font-size:12.5px;color:var(--dim);text-align:right;padding-left:24px}
+  .tree .row{color:var(--dim)}
+  .tree .label.dir{color:var(--dim)}
+  .tree a:hover,.tree a:focus-visible{background:var(--raised);border-left-color:var(--amber)}
+  .tree a:hover .label,.tree a:focus-visible .label{color:var(--amber)}
+
+  .cursor{
+    display:inline-block;width:1ch;height:1.05em;margin-left:.6ch;
+    background:var(--amber);vertical-align:-.16em;
+  }
+
+  /* ---------- sections: a directory you opened from the tree ---------- */
+  /* Each section restates the tree node that links to it, so arriving here from a
+     tree row lands on the same word you clicked. Size order is the hierarchy, and
+     it has to run h1 > h2 > h3 > body, not the other way round. */
+  section{padding:0 0 8px;margin-top:64px;scroll-margin-top:24px}
+  .dirhead{
+    display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+    flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--rule);margin-bottom:36px;
+  }
+  h2{
+    font-family:var(--mono);font-weight:500;font-size:1.35rem;line-height:1.3;
+    letter-spacing:-.01em;color:var(--bone);margin:0;
+  }
+  .count{font-size:12.5px;color:var(--dim)}
+
+  /* The left rule is deliberately continuous down the whole section. It is the
+     `│` from the tree carried on past the listing, which is what says these
+     entries are the children of the heading above them. The per-entry top rule
+     crosses it, so the two together draw a comb: one horizontal tick per record,
+     the same shape a directory listing has. That tick is what bounds an entry, so
+     a title can never be mistaken for the summary above it.
+
+     Grouping also needs the spacing to agree with the rules: gaps inside an entry
+     are 8-16px, the gap between entries is 32+28px plus a hairline. When those two
+     numbers get close, proximity stops telling the reader anything. */
+  .entry{
+    padding:28px 0 32px 18px;scroll-margin-top:24px;
+    border-left:2px solid var(--rule);border-top:1px solid var(--rule);
+  }
+  /* Adjacent sibling, not :first-of-type. Both .dirhead and .entry are divs, so
+     :first-of-type resolves to the dirhead and never matches an entry at all,
+     which leaves a stray rule doubling up under the section heading. */
+  .dirhead + .entry{border-top:0;padding-top:0}
+  /* Jumped to from a tree row. The one you opened is the lit one, in the same
+     amber the tree uses for an active node, and it costs no JavaScript. */
+  .entry:target{border-left-color:var(--amber)}
+  .path{font-size:12.5px;color:var(--dim);margin:0 0 8px}
+  .entry h3{font-size:1.15rem;font-weight:500;line-height:1.45;margin:0 0 8px;color:var(--bone);text-wrap:pretty}
+  .entry h3 a{color:inherit;text-decoration:none;border-bottom:1px solid var(--rule)}
+  .entry h3 a:hover,.entry h3 a:focus-visible{color:var(--amber);border-bottom-color:var(--amber)}
+  .entry .metric{display:block;font-size:15px;font-weight:500;color:var(--bone);margin-bottom:6px}
+  .entry .stack{font-size:12.5px;color:var(--dim);margin:0 0 16px}
+  .entry p{margin:0 0 16px;max-width:70ch}
+  .entry p:last-child{margin-bottom:0}
+
+  footer{
+    padding:32px 0 72px;border-top:1px solid var(--rule);margin-top:32px;
+    font-size:12.5px;line-height:1.9;color:var(--dim);
+  }
+  footer a{color:var(--bone);text-decoration:none;border-bottom:1px solid var(--rule)}
+  footer a:hover,footer a:focus-visible{color:var(--amber);border-bottom-color:var(--amber)}
+  .foot-row{display:flex;flex-wrap:wrap;gap:4px 24px;margin-bottom:16px}
+
+  :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  a{-webkit-tap-highlight-color:rgba(232,176,75,.24)}
+  .topnav a,.tree a,footer a{touch-action:manipulation}
+
+  @media (max-width:620px){
+    /* Metric drops under the label rather than squeezing it. The glyph column keeps
+       its row so the indentation still reads. */
+    .tree a,.tree .row{grid-template-columns:auto minmax(0,1fr)}
+    .tree .metric{grid-column:2;text-align:left;line-height:1.5;padding:0 0 6px}
+    header{padding:40px 0 32px}
+    h2{font-size:1.2rem}
+    .entry{padding-left:12px}
+  }
+
+  @media (prefers-reduced-motion:no-preference){
+    .cursor{animation:blink 1s step-end infinite}
+    @keyframes blink{50%{opacity:0}}
+  }
+
+  @media print{
+    :root{
+      --ground:#fff; --raised:#f2f2f2; --rule:#bbb;
+      --branch:#999; --dim:#444; --bone:#000; --amber:#000;
+    }
+    body{font-size:11pt}
+    .glyph,.cursor,.topnav{display:none}
+    /* Glyphs go, so the nesting has to come back as indentation. Rows drop out of
+       grid so the printed href flows after the text instead of landing in the
+       metric column. Same-page anchors print no URL, because "(#work)" on paper
+       tells the reader nothing. */
+    .tree a,.tree .row{display:block;border-left:0;padding-left:0}
+    .tree ul{padding-left:22px}
+    .tree .metric{padding-left:0}
+    .tree .metric::before{content:" · "}
+    .tree a:not([href^="#"])::after{content:" (" attr(href) ")";font-size:.85em;color:var(--dim)}
+    footer a[href]::after{content:" (" attr(href) ")";font-size:.85em;color:var(--dim)}
+    /* Sections are now several pages long, so avoiding a break inside one would
+       push the whole thing onto a fresh sheet. Entries are the right unit. */
+    .entry{break-inside:avoid}
+    .dirhead{break-after:avoid}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#work">Skip to the work</a>
+<div class="wrap">
+
+  <nav class="topnav" aria-label="Primary">
+    <span class="monogram">T. Porowski</span>
+    <ul>
+      <li><a href="#work">work</a></li>
+      <li><a href="#writing">writing</a></li>
+      <li><a href="Thomas_Porowski_Resume.pdf">résumé</a></li>
+    </ul>
+  </nav>
+
+  <main id="main">
+  <header>
+    <h1>thomas-porowski/</h1>
+    <p class="thesis">I build the plumbing between systems that were never meant to talk to each other: identity provisioning, ticket automation, and the integrations that stop people doing work by hand.</p>
+    <p class="whereabouts">Systems administrator in university IT · Mathematics &amp; Computer Science, May 2027 · Philadelphia, PA</p>
+  </header>
+
+  <nav class="tree-nav" aria-label="Contents">
+    <!-- translate="no" is inherited by every row. These are filenames; an
+         auto-translator turning "writing/" into another language breaks the
+         conceit and, for the two real files, the link text stops matching the
+         page it opens. -->
+    <ul class="tree" role="list" translate="no">
+      <li>
+        <a href="#work">
+          <span class="glyph" aria-hidden="true">├── </span>
+          <span class="label dir">work/</span>
+        </a>
+        <ul role="list">
+          <li>
+            <a href="#lifecycle-automation">
+              <span class="glyph" aria-hidden="true">│   ├── </span>
+              <span class="label">lifecycle-automation</span>
+              <span class="metric">5 hrs → 5 clicks</span>
+            </a>
+          </li>
+          <li>
+            <a href="#device-data">
+              <span class="glyph" aria-hidden="true">│   ├── </span>
+              <span class="label">device-data-in-ticket</span>
+              <span class="metric">~$9,000/yr avoided</span>
+            </a>
+          </li>
+          <li>
+            <a href="#tenant-consolidation">
+              <span class="glyph" aria-hidden="true">│   ├── </span>
+              <span class="label">tenant-consolidation</span>
+              <span class="metric">~half the config retired</span>
+            </a>
+          </li>
+          <li>
+            <a href="#approval-repair">
+              <span class="glyph" aria-hidden="true">│   └── </span>
+              <span class="label">approval-repair</span>
+              <span class="metric">~$50,000/yr in staff hours</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <a href="#writing">
+          <span class="glyph" aria-hidden="true">├── </span>
+          <span class="label dir">writing/</span>
+        </a>
+        <ul role="list">
+          <li>
+            <a href="writing/polling-over-webhooks.html">
+              <span class="glyph" aria-hidden="true">│   ├── </span>
+              <span class="label">polling-over-webhooks</span>
+              <span class="metric">architecture</span>
+            </a>
+          </li>
+          <li>
+            <a href="writing/build-vs-buy-asset-management.html">
+              <span class="glyph" aria-hidden="true">│   ├── </span>
+              <span class="label">build-vs-buy</span>
+              <span class="metric">decision</span>
+            </a>
+          </li>
+          <li>
+            <!-- No page yet, so no link. A node that resolves to nothing is worse than
+                 a node that says it isn't written. -->
+            <span class="row">
+              <span class="glyph" aria-hidden="true">│   └── </span>
+              <span class="label">tenant-as-a-directed-graph</span>
+              <span class="metric">draft</span>
+            </span>
+          </li>
+        </ul>
+      </li>
+      <li>
+        <a href="Thomas_Porowski_Resume.pdf">
+          <span class="glyph" aria-hidden="true">└── </span>
+          <span class="label">resume.pdf<span class="cursor" aria-hidden="true"></span></span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <section id="work">
+    <div class="dirhead">
+      <h2 translate="no">work/</h2>
+      <span class="count">4 selected</span>
+    </div>
+
+    <div class="entry" id="lifecycle-automation">
+      <p class="path" translate="no">work/lifecycle-automation</p>
+      <h3>Employee lifecycle automation</h3>
+      <span class="metric">5 hours → 5 clicks per onboarding</span>
+      <p class="stack">Python · PowerShell · Zendesk API · Active Directory · GAM7</p>
+      <p>A joiner-mover-leaver pipeline that watches Zendesk for HR onboarding and offboarding requests, then provisions Active Directory identities, creates Google Workspace accounts, notifies the hiring manager, and opens routed child tickets for hardware and software.</p>
+      <p>It runs on an isolated host with no ingress traffic, authenticating with a group managed service account. Offboarding relocates a departing employee’s Drive data to a shared drive and grants the manager delegated access that expires automatically, so nobody keeps standing access to an account belonging to someone who has left.</p>
+    </div>
+
+    <div class="entry" id="device-data">
+      <p class="path" translate="no">work/device-data-in-ticket</p>
+      <h3>Device data inside the ticket</h3>
+      <span class="metric">~$9,000/year in licensing avoided</span>
+      <p class="stack">React · ZAF client · Microsoft OAuth · Graph API</p>
+      <p>Agents kept asking users questions the helpdesk should already know the answer to: what laptop is this, is it encrypted, when did it last check in. The vendor’s answer was an asset management product with a per-agent price attached.</p>
+      <p>Instead I built a sidebar app that authenticates to Microsoft and pulls the requester’s devices from Graph directly into the ticket, with a one-click write-back into an internal note so the record survives after the ticket closes.</p>
+    </div>
+
+    <div class="entry" id="tenant-consolidation">
+      <p class="path" translate="no">work/tenant-consolidation</p>
+      <h3>Tenant consolidation &amp; TidyConfig</h3>
+      <span class="metric">Roughly half of forms, fields, triggers, views, automations and macros retired</span>
+      <p class="stack">Python · React · Zendesk API · ZCLI</p>
+      <p>Six departments had grown a Zendesk tenant nobody could safely change: deleting a field might orphan a trigger, and nobody knew which. So the first step was mapping it, as a dependency graph of every object and every relationship between them.</p>
+      <p>The map became a tool. TidyConfig reads a tenant’s configuration, reports what is safe to remove, migrates data between fields and forms so nothing is lost on the way out, and cascades deletions to whatever would be left dangling. None of the required functionality went with it, and the forms a person actually has to choose between dropped from 22 to 7.</p>
+    </div>
+
+    <div class="entry" id="approval-repair">
+      <p class="path" translate="no">work/approval-repair</p>
+      <h3>Purchase approval repair</h3>
+      <span class="metric">Five handoffs removed · ~$50,000/year in staff hours</span>
+      <p class="stack">Python · Gmail API · ERP integration</p>
+      <p>The finance system emails purchase approvals as interactive HTML. The mail client throws that away, so approvers were opening a message with no buttons in it. The workaround had grown into a whole second system: an out-of-band document passed from approver to approver, then re-keyed by hand once it reached purchasing.</p>
+      <p>The automation detects the failure and puts the approval back where it was always meant to happen, so nobody re-keys anything and a rejection no longer restarts the whole circuit. The interesting part was that the visible problem was a rendering bug and the expensive problem was the parallel process people had built around it.</p>
+    </div>
+  </section>
+
+  <section id="writing">
+    <div class="dirhead">
+      <h2 translate="no">writing/</h2>
+      <span class="count">2 published · 1 draft</span>
+    </div>
+
+    <div class="entry">
+      <p class="path" translate="no">writing/polling-over-webhooks</p>
+      <h3><a href="writing/polling-over-webhooks.html">Why I chose polling over webhooks for a host with AD write access</a></h3>
+      <p class="stack">Architecture</p>
+      <p>The slower design was the right one, and the reason has nothing to do with performance.</p>
+    </div>
+
+    <div class="entry">
+      <p class="path" translate="no">writing/build-vs-buy</p>
+      <h3><a href="writing/build-vs-buy-asset-management.html">Build vs. buy, when you already own the data</a></h3>
+      <p class="stack">Decision</p>
+      <p>The quote was about nine thousand dollars a year. What it was selling was a second copy of a record we already had.</p>
+    </div>
+
+    <div class="entry">
+      <p class="path" translate="no">writing/tenant-as-a-directed-graph</p>
+      <h3>Mapping a ticketing tenant as a directed graph before deleting anything</h3>
+      <p class="stack">Draft</p>
+      <p>You can't safely delete what you haven't mapped.</p>
+    </div>
+  </section>
+  </main>
+
+  <footer>
+    <div class="foot-row">
+      <a href="mailto:tporowski17@gmail.com">tporowski17@gmail.com</a>
+      <a href="https://linkedin.com/in/tommy-porowski">LinkedIn</a>
+      <a href="https://github.com/tporowski">GitHub</a>
+      <a href="Thomas_Porowski_Resume.pdf">Résumé (PDF)</a>
+    </div>
+    <div>Built without a framework. Views are my own, not my employer’s, and no employer configuration is described here.</div>
+  </footer>
+
+</div>
+</body>
+</html>

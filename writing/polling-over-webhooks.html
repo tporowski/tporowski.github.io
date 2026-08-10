@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polling over webhooks — Thomas Porowski</title>
+<meta name="description" content="Why an identity automation with Active Directory write access polls for work instead of accepting inbound requests.">
+<meta name="theme-color" content="#17150F" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FBF8F0" media="(prefers-color-scheme: light)">
+<link rel="canonical" href="https://tporowski.github.io/writing/polling-over-webhooks.html">
+<meta property="og:title" content="Polling over webhooks, on a host with AD write access">
+<meta property="og:description" content="Why an identity automation with Active Directory write access polls for work instead of accepting inbound requests.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://tporowski.github.io/writing/polling-over-webhooks.html">
+<meta property="og:image" content="https://tporowski.github.io/og-card.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Contrast on --ground: bone 15.9:1, amber 9.3:1, dim 5.5:1, branch 2.9:1 */
+    --ground:#17150F; --raised:#241F14; --rule:#3A3423;
+    --branch:#6B6047; --dim:#9C8B63; --bone:#F5EFE0; --amber:#E8B04B;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  }
+  @media (prefers-color-scheme:light){
+    /* bone 16.5:1, amber 5.6:1, dim 5.6:1, branch 3.1:1 */
+    :root{
+      --ground:#FBF8F0; --raised:#F0E9D8; --rule:#DDD3BC;
+      --branch:#9A8C69; --dim:#6E6350; --bone:#1C1913; --amber:#8A5A0B;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;color-scheme:dark light;background:var(--ground)}
+  body{margin:0;background:var(--ground);color:var(--bone);font-family:var(--serif);font-size:18px;line-height:1.72}
+  .wrap{
+    max-width:65ch;margin:0 auto;
+    padding-left:max(20px,env(safe-area-inset-left));
+    padding-right:max(20px,env(safe-area-inset-right));
+  }
+  .skip{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .skip:focus{
+    position:fixed;top:8px;left:8px;z-index:10;width:auto;height:auto;clip-path:none;
+    background:var(--raised);color:var(--amber);padding:10px 16px;font-size:13px;
+    font-family:var(--mono);text-decoration:none;outline:2px solid var(--amber);
+  }
+  a{-webkit-tap-highlight-color:rgba(232,176,75,.24)}
+  nav{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;padding:24px 20px;max-width:65ch;margin:0 auto}
+  .monogram{font-family:var(--mono);font-weight:500;letter-spacing:.16em;font-size:12.5px;text-transform:uppercase;text-decoration:none;color:var(--dim)}
+  nav a.back{font-family:var(--mono);font-size:12.5px;color:var(--dim);text-decoration:none}
+  .monogram:hover,nav a.back:hover{color:var(--amber)}
+  header{padding:48px 0 28px;border-bottom:1px solid var(--rule);margin-bottom:36px}
+  .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:0 0 20px}
+  h1{font-family:var(--mono);font-weight:500;font-size:clamp(1.4rem,4.4vw,1.95rem);line-height:1.28;letter-spacing:-.015em;margin:0;text-wrap:balance}
+  .standfirst{font-size:1.05rem;color:var(--dim);font-style:italic;margin:20px 0 0;text-wrap:pretty}
+  h2{font-family:var(--mono);font-weight:500;font-size:1rem;line-height:1.5;margin:44px 0 14px;letter-spacing:-.005em;color:var(--bone);text-wrap:balance}
+  p{margin:0 0 20px}
+  ul{padding-left:22px;margin:0 0 20px}
+  li{margin-bottom:9px}
+  strong{color:var(--amber);font-weight:500}
+  blockquote{margin:32px 0;padding-left:22px;border-left:2px solid var(--amber);font-style:italic;color:var(--dim)}
+  code{font-family:var(--mono);font-size:.84em;background:var(--raised);color:var(--bone);padding:1px 5px;border-radius:2px}
+  footer{margin-top:64px;padding:28px 0 76px;border-top:1px solid var(--rule);font-family:var(--mono);font-size:12.5px;line-height:1.9;color:var(--dim)}
+  footer a{color:var(--bone);text-decoration:none;border-bottom:1px solid var(--rule)}
+  footer a:hover,footer a:focus-visible{color:var(--amber);border-bottom-color:var(--amber)}
+  :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+  @media print{
+    :root{--ground:#fff;--raised:#f2f2f2;--rule:#bbb;--branch:#999;--dim:#444;--bone:#000;--amber:#000}
+    body{font-size:11pt}
+    nav{display:none}
+    strong{font-weight:600}
+    footer a[href]::after{content:" (" attr(href) ")";font-size:.85em;color:var(--dim)}
+    h2{break-after:avoid}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#article">Skip to the article</a>
+<nav aria-label="Primary">
+  <a class="monogram" href="../index.html">T. POROWSKI</a>
+  <a class="back" href="../index.html#writing"><span aria-hidden="true">←</span> All writing</a>
+</nav>
+
+<main class="wrap" id="article">
+  <header>
+    <p class="eyebrow">Architecture · Identity</p>
+    <h1>Polling over webhooks, on a host with AD write access</h1>
+    <p class="standfirst">The slower design was the right one, and the reason has nothing to do with performance.</p>
+  </header>
+
+  <p>The onboarding automation I maintain has a job that sounds mundane and isn't: it reads incoming HR requests and creates the people. Active Directory identities, Google Workspace accounts, group membership, the downstream tickets that get someone a laptop. To do that it holds write access to the directory.</p>
+
+  <p>The obvious design is a webhook. The ticketing system already emits events; stand up an endpoint, receive the request, act on it immediately. Lower latency, less wasted work, and it's the pattern everyone reaches for.</p>
+
+  <p>I polled instead. On a schedule, the service asks the ticketing API whether there is anything to do, does it, and goes back to sleep.</p>
+
+  <h2>What the webhook actually costs</h2>
+
+  <p>A webhook endpoint is an inbound door. To accept one, this host needs to listen for traffic originating outside itself, and this host can create accounts and modify group membership in the directory. The question stops being "is my handler correct" and becomes "what is the blast radius when it isn't."</p>
+
+  <p>Signature verification helps. It doesn't eliminate the class of problem:</p>
+
+  <ul>
+    <li>The listener is reachable, so it can be scanned, fuzzed, and probed by anything that finds it.</li>
+    <li>A signing secret is a credential that lives somewhere, rotates on a schedule someone has to remember, and is only as good as the comparison that checks it.</li>
+    <li>Replay is a real attack against a provisioning system in a way it isn't against a chat notifier. The same message delivered twice means two accounts, or an account restored after it was meant to be gone.</li>
+    <li>Every dependency in the request path (the web server, the framework, the TLS termination) is now attack surface on a domain-privileged machine.</li>
+  </ul>
+
+  <p>None of that is unmanageable. Plenty of organisations run exactly this safely. But the cost of managing it is ongoing and lands on one person, and the thing it buys is latency I do not need. <strong>Nobody has ever needed an account provisioned in four seconds instead of four minutes.</strong></p>
+
+  <h2>What polling gives up, and what it gives back</h2>
+
+  <p>Polling inverts the direction of trust. The host makes outbound connections only; nothing is listening. There is no endpoint to discover and no signing secret to rotate. Nothing in the request path needs patching, because there is no request path. The firewall rule is "this machine talks out, nothing talks in," which is a sentence you can hand to a security reviewer without a diagram.</p>
+
+  <p>It also authenticates differently. The service runs under a group managed service account: Windows rotates the password itself, on a schedule, and no human ever sees it. There is no credential in a config file for me to accidentally commit, and no shared password that outlives my employment. For the Microsoft side it uses OAuth client credentials scoped to exactly the permissions it needs and no more.</p>
+
+  <blockquote>The tradeoff I made: minutes of latency in exchange for a machine with directory write access that accepts no inbound traffic at all.</blockquote>
+
+  <h2>The part that actually needed care</h2>
+
+  <p>Polling has one genuine hazard, and it isn't performance. A poll loop will happily do the same work twice. Crash halfway through provisioning, restart, pick up the same ticket, create the account again.</p>
+
+  <p>So state lives in the ticket. Each stage of the workflow writes its progress back as a comment, and the automation reads that history before it acts. <strong>The ticket is the source of truth about what has already happened</strong>, which means the operation is idempotent across restarts: re-running it converges on the same result rather than duplicating it. It also means the audit trail and the state machine are the same artifact. Anyone can open the ticket and read what the system did, in order, without access to a log server.</p>
+
+  <p>The second hazard is silence. A webhook failure is loud; a poll loop that has quietly stopped looks exactly like a week with no new hires. That one is solved with a heartbeat: the job reports each cycle, and absence of a report raises an alert. The monitoring had to be built at the same time as the thing it monitors, not after.</p>
+
+  <h2>Where I'd choose differently</h2>
+
+  <p>I'm not arguing that polling wins. The argument is that the privilege level of the host belongs in the decision, and usually isn't in it.</p>
+
+  <p>If the same integration were read-only (pulling device data into a ticket, say) I'd take the webhook without much thought. If provisioning latency were genuinely user-facing, I'd invert it: keep the privileged worker outbound-only, and put a webhook receiver on a separate unprivileged host that does nothing but drop a message into a queue the worker pulls from. That's the version I'd build with more infrastructure available, and it preserves the property I actually care about, which is that <strong>the machine holding directory credentials never accepts a connection from anything.</strong></p>
+
+  <footer>
+    Thomas Porowski · <a href="mailto:tporowski17@gmail.com">tporowski17@gmail.com</a> · <a href="../index.html">home</a><br>
+    Written about a system I maintain at work. Views my own; no employer configuration is described here.
+  </footer>
+</main>
+</body>
+</html>

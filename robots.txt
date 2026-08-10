@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# The résumé stays reachable from the site, but keeping the PDF out of the
+# index means the pages rank for the name instead of a file carrying contact
+# details. Delete this line to let it be indexed.
+Disallow: /Thomas_Porowski_Resume.pdf
